@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Fetch API Kullanımı</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+
+    <div class="row d-flex align-items-center justify-content-center">
+        <h3 class="text-center mt-3">Fetch API Kullanımı</h3>
+        <div class="col-md-8 mt-5">
+            <div class="card">
+                <div class="card-header">
+                    Kişi Ekle
+                </div>
+                <div class="card-body">
+                    <form id="form">
+                        <div class="form-group">
+                            <label for="name">İsim</label>
+                            <input class="form-control" id="name" type="text">
+                        </div>
+                        <div class="form-group">
+                            <label for="surname">Soyisim</label>
+                            <input class="form-control" id="surname" type="text">
+                        </div>
+
+                        <button id="add" type="submit">Gönder</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-8 mt-5">
+            <div class="card">
+                <div class="card-header">
+                    Kişiler
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <thead class="bg-primary text-white">
+                        <tr>
+                            <th>İsim</th>
+                            <th>Soyisim</th>
+                            <th>Eylem</th>
+                        </tr>
+                        </thead>
+                        <tbody id="users"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    
+    
+    function confirmRemove(id){
+
+        Swal.fire({
+            title: 'Kullanıcıyı silmek istediğinize emin misiniz?',
+            showDenyButton: true,
+            showCancelButton: false,
+            confirmButtonText: 'Evet, oldukça!',
+            denyButtonText: `Hayır, vazgeçtim!`,
+        }).then((result) => {
+            /* Read more about isConfirmed, isDenied below */
+            if (result.isConfirmed) {
+                removeUser(id)
+            } else if (result.isDenied) {
+                Swal.fire('Tamam endişelenme dostum herşey yerinde ! :)', '', 'info')
+            }
+        })
+
+        
+    }
+
+    function removeUser(id){
+        let formData = new FormData;
+        formData.append('id',id);
+
+        fetch('server.php?process=sil',{
+            method: 'POST',
+            body: formData
+        }).then((res) => res.json())
+            .then((res) => {
+
+                Swal.fire({
+                    title: res.title,
+                    text: res.message,
+                    icon: res.type,
+                    confirmButtonText: 'Tamam'
+                });
+
+                let row = document.getElementById('row_'+`${res.data.id}`)
+                row.remove();
+            });
+
+    }
+    
+    const form = document.getElementById('form');
+    const users = document.getElementById('users');
+
+
+    form.addEventListener('submit', (e) => {
+        let name = document.getElementById('name').value,
+            surname = document.getElementById('surname').value;
+
+        let formData = new FormData();
+
+        formData.append('name', name);
+        formData.append('surname', surname);
+
+        fetch('server.php?process=ekle', {
+            method: 'POST',
+            body: formData
+        }).then(res => res.json())
+            .then(res => {
+                Swal.fire({
+                    title: res.title,
+                    text: res.message,
+                    icon: res.type,
+                    confirmButtonText: 'Tamam'
+                });
+
+                let tr = document.createElement('tr');
+                tr.setAttribute('id',`row_${res.data.id}`)
+                tr.innerHTML = `<th>${res.data.name}</th>
+                            <th>${res.data.surname}</th>
+                            <th>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" onclick="confirmRemove('${res.data.id}')" type="button">Sil</button>
+                                </div>
+                            </th>`;
+
+                users.prepend(tr);
+            });
+
+        e.preventDefault();
+    })
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('server.php?process=getir').then((res) => res.json())
+            .then((res) => {
+                
+                for (let user of res.data){
+
+                    let tr = document.createElement('tr');
+                    tr.setAttribute('id',`row_${user.id}`)
+                    tr.innerHTML = `<th>${user.name}</th>
+                            <th>${user.surname}</th>
+                            <th>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" onclick="confirmRemove('${user.id}')" type="button">Sil</button>
+                                </div>
+                            </th>`;
+                    users.prepend(tr);
+                }
+            });
+    });
+
+
+</script>
+
+</body>
+</html>
